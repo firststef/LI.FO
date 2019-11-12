@@ -1,0 +1,10 @@
+//Numerele divizibile cu 4
+S->0|4|8
+A->2|6
+B->0|4|8
+S->2B|4B|6B|8B
+B->1A|3A|5A|7A|9A
+S->1C|2C|3C|4C|5C|6C|7C|8C|9C
+C->1A|3A|5A|7A|9A
+C->0C|1C|2C|3C|4C|5C|6C|7C|8C|9C
+C->0B|2B|4B|6B|8B
