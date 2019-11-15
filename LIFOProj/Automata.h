@@ -5,6 +5,10 @@
 #include <functional>
 #include <algorithm>
 #include <map>
+#include <set>
+#include <unordered_set>
+
+#define EPS 0
 
 struct State
 {
@@ -12,211 +16,104 @@ struct State
 	
 	enum Type
 	{
-		FINAL,
-		NON_FINAL
+		FINAL = 0,
+		NON_FINAL = 1
 	} type;
 };
 
-#define INSTANTIATE_STATE_SHARED_PTR(state, type) auto state = std::make_shared<State>(State{#state, State::type});
+#define INSTANTIATE_STATE_OBJ(state, type) auto state = std::make_shared<State>(State{#state, State::type});
 
 struct Automaton
 {
 	std::shared_ptr<State> initial;
 	std::vector<std::shared_ptr<State>> all_states;
 
-	std::vector<std::map<char, std::vector<unsigned>>> all_transitions;
+	std::set<char> alphabet;
+	
+	std::vector<std::map<char, std::set<unsigned>>> all_transitions;
 
 	//Map for indexing states
 	std::map<std::string, unsigned> map;
 
-	struct TransitionHandler
+	struct Delta
 	{
-		unsigned state_index;
 		Automaton* automaton;
 
 		struct StateCatcher
 		{
-			TransitionHandler* handler;
+			Delta* handler;
+
+			unsigned state_index;
 			char literal;
-			
-			void operator>>(std::shared_ptr<State> state)
-			{
-				auto new_state_idx = handler->automaton->map.find(state->identifier)->second;
 
-				handler->automaton->all_transitions[handler->state_index][literal].push_back(new_state_idx);
-			}
+			void operator>>(std::shared_ptr<State> state);
 
-			void operator=(std::shared_ptr<State> state)
-			{
-				*this >> state;
-			}
-			
+			void operator=(std::shared_ptr<State> state);
 		};
-		
-		StateCatcher operator[](char literal)
-		{
-			StateCatcher catcher{this, literal};
-			return catcher;
-		}
-	};
 
-	Automaton(std::shared_ptr<State> initial, std::initializer_list<std::shared_ptr<State>> list)
-	{
-		this->initial = initial;
-		for (auto& st : list)
-		{
-			add_state(st);
-		}
-	}
+		StateCatcher operator()(std::shared_ptr<State> state, char literal);
+	} delta;
 
-	void add_state(std::shared_ptr<State> state)
-	{
-		auto element = map.find(state->identifier);
-		if (element == map.end())
-		{
-			map[state->identifier] = all_states.size();
-			all_states.push_back(state);
-			all_transitions.resize(all_transitions.size() + 1);
-		}
-		else
-			throw std::exception("State already exists in automaton");
-	}
+	Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr<State>> list, std::set<char> alphabet);
 
-	TransitionHandler operator[](std::shared_ptr<State> state)
-	{
-		auto element = map.find(state->identifier);
-		if (element != map.end())
-		{
-			return TransitionHandler{ element->second, this };
-		}
-		else
-			throw std::exception("State does not exist in automaton");
-	}
+	void add_state(std::shared_ptr<State> state);
+
+	bool is_deterministic();
+
+	std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> get_rel_table_deterministic();
+	Automaton get_deterministic_automaton();
+
+	std::vector<std::vector<bool>> get_rel_table_minimalistic();
+	Automaton get_minimal_automaton();
 };
 
-std::vector<std::vector<bool>> determine_relation(const Automaton& automaton)
+inline Automaton automaton1()
 {
-	auto& all_states = automaton.all_states;
-	auto& all_transitions = automaton.all_transitions;
-	const auto n = automaton.all_states.size();
-	
-	//Separable, inseparable table
-	std::vector<std::vector<bool>> table;
+	INSTANTIATE_STATE_OBJ(s0, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s1, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s2, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s3, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s4, FINAL);
+	INSTANTIATE_STATE_OBJ(s5, FINAL);
 
-	table.resize(n);
-	for (auto& vec : table)
-	{
-		vec.resize(n);
-	}
+	Automaton a{ s0, {s0,s1,s2,s3,s4,s5}, {'a', 'b'} };
 
-	//Dependency table
-	std::vector<std::vector<std::vector<std::pair<unsigned, unsigned>>>> dependency;
+	a.delta(s0, 'a') >> s1;
+	a.delta(s0, 'b') >> s1;
+	a.delta(s1, 'a') >> s2;
+	a.delta(s1, 'b') >> s0;
+	a.delta(s2, 'a') >> s3;
+	a.delta(s2, 'b') >> s4;
+	a.delta(s3, 'a') >> s1;
+	a.delta(s3, 'b') >> s3;
+	a.delta(s4, 'a') >> s5;
+	a.delta(s4, 'b') >> s2;
+	a.delta(s5, 'a') >> s4;
+	a.delta(s5, 'b') >> s3;
 
-	dependency.resize(n);
-	for (auto& vec : dependency)
-	{
-		vec.resize(n);
-	}
-
-	//Init
-	for (unsigned qi = 0; qi < n - 1; qi++) {
-		for (unsigned qj = qi + 1; qj < n; qj++) {
-			if (all_states[qi]->type != all_states[qj]->type)
-				table[qi][qj] = 1;
-			else
-				table[qi][qj] = 0;
-		}
-	}
-
-	std::function<void(unsigned,unsigned)> update_table = [&](unsigned qi, unsigned qj)
-	{
-		printf("Updating (%d,%d)\n", qi, qj);
-		table[qi][qj] = 1;
-		for ( auto& dependent_state : dependency[qi][qj])
-		{
-			if (table[dependent_state.first][dependent_state.second] == 0)
-				update_table(dependent_state.first, dependent_state.second);
-		}
-	};
-
-	for (unsigned qi = 0; qi < n - 1; qi++) {
-		for (unsigned qj = qi + 1; qj < n; qj++)
-		{
-			if (table[qi][qj] == 0) {
-
-				printf("(%d,%d)\n", qi, qj);
-
-				bool found = false;
-				for (auto trans_i : all_transitions[qi])
-				{
-					for (const auto trans_j : all_transitions[qj])
-					{
-						if (trans_i.first == trans_j.first)
-						{
-							for (auto qip : trans_i.second)
-							{
-								for (auto qjp : trans_j.second)
-								{
-									//Tuple elements need to be in order
-									if (qip > qjp)
-									{
-										std::swap(qip, qjp);
-									}
-
-									if (table[qip][qjp] == 1)
-									{
-										printf("Found transition (%d,%d)\n", qip, qjp);
-										found = true;
-										break;
-									}
-								}
-							}
-						}
-					}
-				}
-				
-				if (found)
-				{
-					update_table(qi, qj);
-				}
-				else
-				{
-					for (auto trans_i : all_transitions[qi])
-					{
-						for (const auto trans_j : all_transitions[qj])
-						{
-							if (trans_i.first == trans_j.first)
-							{
-								for (auto qip : trans_i.second)
-								{
-									for (auto qjp : trans_j.second)
-									{
-										//Tuple elements need to be in order
-										if (qip > qjp)
-										{
-											std::swap(qip, qjp);
-										}
-
-										printf("With %c to (%d,%d) ", trans_i.first, qip, qjp);
-
-										if (qip != qjp && (qi != qip || qj != qjp) && (qj != qip || qi != qjp))
-										{
-											printf("Adding to list\n");
-											dependency[qip][qjp].emplace_back(std::make_pair(qi, qj));
-										}
-										else
-											printf("No transition\n");
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return table;
+	return a;
 }
 
-//Automaton get_minimal()
+inline Automaton automaton2()
+{
+	INSTANTIATE_STATE_OBJ(s0, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s1, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s2, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s3, NON_FINAL);
+	INSTANTIATE_STATE_OBJ(s4, FINAL);
+
+	Automaton a{ s0, {s0,s1,s2,s3,s4}, {'a', 'b', EPS} };
+
+	a.delta(s0, 'a') >> s1;
+	a.delta(s0, 'b') >> s2;
+	a.delta(s1, 'a') >> s3;
+	a.delta(s1, 'a') >> s2;
+	a.delta(s1, EPS) >> s0;
+	a.delta(s2, 'a') >> s3;
+	a.delta(s2, 'b') >> s0;
+	a.delta(s3, 'a') >> s4;
+	a.delta(s3, 'b') >> s3;
+	a.delta(s4, EPS) >> s1;
+
+	return a;
+}
