@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+#include <sstream>
 
 #define EPS 0
 
@@ -65,6 +66,10 @@ struct Automaton
 
 	std::vector<std::vector<bool>> get_rel_table_minimalistic();
 	Automaton get_minimal_automaton();
+
+	std::string to_dot();
+
+	void save_to_dot(std::string filename="automaton");
 };
 
 inline Automaton automaton1()

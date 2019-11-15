@@ -1,6 +1,7 @@
 #include "Automata.h"
 #include <iterator>
 #include <string>
+#include <fstream>
 
 void Automaton::Delta::StateCatcher::operator>>(std::shared_ptr<State> state)
 {
@@ -70,7 +71,7 @@ bool Automaton::is_deterministic()
 
 		for (auto& pair : map)
 		{
-			if (pair.second.size() != 1)
+			if (pair.first == EPS || pair.second.size() != 1)
 				return false;
 		}
 	}
@@ -105,21 +106,23 @@ std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Auto
 
 	while (table.back().second.empty())
 	{
-		table[current_row].second.resize(alphabet.size());
 		decltype(alphabet.begin()) alph_it;
-		unsigned literal_idx;
-		for (alph_it = alphabet.begin(), literal_idx = 0; literal_idx < alphabet.size(); ++literal_idx, ++alph_it)
+		for (alph_it = alphabet.begin(); alph_it != alphabet.end(); ++alph_it)
 		{
+			if (*alph_it == EPS)
+			{
+				continue;
+			}
+			
 			std::set<unsigned> current_set;
 			
 			for (auto& leaving_state : table[current_row].first)
 			{
 				auto next_set = get_next_vector_for_state_literal(leaving_state, *alph_it);
 				current_set.insert(next_set.begin(), next_set.end());
-				//std::copy(next_vector.begin(), next_vector.end(), std::inserter(current_set, current_set.end()));
 			}
 
-			table[current_row].second[literal_idx] = current_set;
+			table[current_row].second.push_back(current_set);
 
 			bool found = false;
 			for (auto& pair : table)
@@ -163,6 +166,8 @@ Automaton Automaton::get_deterministic_automaton()
 		new_states.push_back(std::make_shared<State>(State{ name, State::Type(type) }));
 	}
 
+	auto new_alphabet = alphabet;
+	alphabet.erase(EPS);
 	Automaton new_automaton(new_states[0], new_states, alphabet);
 
 	unsigned current_index = 0;
@@ -171,6 +176,9 @@ Automaton Automaton::get_deterministic_automaton()
 		auto let_it = alphabet.begin();
 		for (unsigned letter_num = 0; letter_num < alphabet.size();++letter_num, ++let_it)
 		{
+			if (*let_it == EPS)
+				continue;
+			
 			unsigned next_index_for_new = 0;
 			for (auto& pair2 : table)
 			{
@@ -420,4 +428,55 @@ Automaton Automaton::get_minimal_automaton()
 	}
 
 	return new_automaton;
+}
+
+std::string Automaton::to_dot()
+{
+	std::string dot_document;
+	dot_document += "digraph A {\n\trankdir = LR;\n";
+
+	std::ostringstream init_stream;
+	std::ostringstream content_stream;
+
+	for (unsigned idx = 0; idx < all_states.size(); idx++)
+	{
+		auto& state = all_states[idx];
+		init_stream << "\t" << "node" << idx << "[";
+		init_stream << "label=\"" << state->identifier << "\"";
+
+		if (state->identifier == initial->identifier)
+			init_stream << ", style= bold";
+		if (state->type == State::FINAL)
+			init_stream << ", shape= box";
+
+		init_stream << "]; \n";
+
+		for (auto& trans : all_transitions[idx])
+		{
+			for (auto& el : trans.second)
+			{
+				content_stream << "\t" << "node" << idx << " -> " << "node" << el << "[label=\"";
+				if (trans.first == EPS)
+					content_stream << "EPS";
+				else
+					content_stream << trans.first;
+				content_stream << "\"];\n";
+			}
+		}
+	}
+
+	dot_document += init_stream.str();
+	dot_document += content_stream.str();
+	dot_document += "}";
+
+	return dot_document;
+}
+
+void Automaton::save_to_dot(std::string filename)
+{
+	auto doc = to_dot();
+	
+	std::string name(filename + ".dot");
+	std::ofstream out(name.c_str());
+	out << doc << std::endl;
 }

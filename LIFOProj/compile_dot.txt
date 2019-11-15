@@ -1,0 +1,1 @@
+dot -Tpng automaton.dot -o automaton.png

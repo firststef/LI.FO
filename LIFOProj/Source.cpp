@@ -59,7 +59,11 @@ int main(int argc, char* argv[]) {
 
 		auto new_automaton = a.get_deterministic_automaton();
 
-		bool deterministic = a.is_deterministic();
+		bool deterministic = new_automaton.is_deterministic();
+
+		auto doc = new_automaton.to_dot();
+
+		new_automaton.save_to_dot();
 
 		system("pause");
 	}
