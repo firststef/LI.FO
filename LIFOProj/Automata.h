@@ -3,13 +3,10 @@
 #include <vector>
 #include <memory>
 #include <functional>
-#include <algorithm>
 #include <map>
 #include <set>
-#include <unordered_set>
-#include <sstream>
 
-#define EPS 0
+#define A_EPS 0
 
 struct State
 {
@@ -48,17 +45,21 @@ struct Automaton
 			char literal;
 
 			void operator>>(std::shared_ptr<State> state);
+			void operator>>(unsigned idx);
 
 			void operator=(std::shared_ptr<State> state);
+			void operator=(unsigned idx);
 		};
 
 		StateCatcher operator()(std::shared_ptr<State> state, char literal);
+		StateCatcher operator()(unsigned idx, char literal);
 	} delta;
 
 	Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr<State>> list, std::set<char> alphabet);
 
 	void add_state(std::shared_ptr<State> state);
-
+	void reset_states_identifiers();
+	
 	bool is_deterministic();
 
 	std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> get_rel_table_deterministic();
@@ -68,8 +69,6 @@ struct Automaton
 	Automaton get_minimal_automaton();
 
 	std::string to_dot();
-
-	void save_to_dot(std::string filename="automaton");
 };
 
 inline Automaton automaton1()
@@ -107,18 +106,18 @@ inline Automaton automaton2()
 	INSTANTIATE_STATE_OBJ(s3, NON_FINAL);
 	INSTANTIATE_STATE_OBJ(s4, FINAL);
 
-	Automaton a{ s0, {s0,s1,s2,s3,s4}, {'a', 'b', EPS} };
+	Automaton a{ s0, {s0,s1,s2,s3,s4}, {'a', 'b', A_EPS} };
 
 	a.delta(s0, 'a') >> s1;
 	a.delta(s0, 'b') >> s2;
 	a.delta(s1, 'a') >> s3;
 	a.delta(s1, 'a') >> s2;
-	a.delta(s1, EPS) >> s0;
+	a.delta(s1, A_EPS) >> s0;
 	a.delta(s2, 'a') >> s3;
 	a.delta(s2, 'b') >> s0;
 	a.delta(s3, 'a') >> s4;
 	a.delta(s3, 'b') >> s3;
-	a.delta(s4, EPS) >> s1;
+	a.delta(s4, A_EPS) >> s1;
 
 	return a;
 }

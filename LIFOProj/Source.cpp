@@ -2,6 +2,15 @@
 #include <cstdlib>
 #include "BruteForceAlgo.h"
 #include "Automata.h"
+#include "Regex.h"
+#include "Grammar.h"
+
+void save_to_dot(std::string data, std::string filename="document")
+{
+	std::string name(filename + ".dott");
+	std::ofstream out(name.c_str());
+	out << data << std::endl;
+}
 
 void test_minimalistic()
 {
@@ -31,8 +40,8 @@ void test_minimalistic()
 	}
 }
 
-int main(int argc, char* argv[]) {
-
+void test_deterministic()
+{
 	try {
 
 		auto a = automaton2();
@@ -46,7 +55,7 @@ int main(int argc, char* argv[]) {
 				std::cout << el << ",";
 			}
 			std::cout << "] : ";
-			
+
 			for (auto lit : row.second) {
 				std::cout << " [";
 				for (auto el : lit) {
@@ -63,8 +72,118 @@ int main(int argc, char* argv[]) {
 
 		auto doc = new_automaton.to_dot();
 
-		new_automaton.save_to_dot();
+		save_to_dot(doc);
 
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
+
+void test_regex_to_automaton()
+{
+	try {
+
+		auto t = regex_to_regex_tree("a|(b*.c)");
+
+		auto a = t.to_automaton();
+		
+		a = a.get_deterministic_automaton();
+		a.reset_states_identifiers();
+		
+		a.get_minimal_automaton();
+		a.reset_states_identifiers();
+
+		auto doc = a.to_dot();
+		save_to_dot(doc);
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
+
+void test_remove_unproductive_symbols()
+{
+	try {
+		GrammarII G{
+			{"S", "A", "B", "C"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a"}, {"a", "A"}, {"b", "C"}}},
+			{"A", {{"a", "A", "B"}}},
+			{"B", {{"b", "a", "c"}}},
+			{"C", {{"a", "S", "b"}}}
+		}
+		};
+
+		auto str = G.to_text();
+
+		auto Gp = G.get_without_unproductive_symbols();
+
+		auto str2 = Gp.to_text();
+		
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
+
+void test_remove_eps_rules()
+{
+	try {
+		GrammarII G{
+			{"S", "A", "B", "C"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a", "A", "b", "C"}, {"B", "C"}}},
+			{"A", {{"a", "A"},{"a", "B"}}},
+			{"B", {{"b", "B"},{"C"}}},
+			{"C", {{"c", "C"},{ G_EPS}}}
+		}
+		};
+
+		auto str = G.to_text();
+
+		auto Gp = G.get_erase_e_transition();
+
+		auto str2 = Gp.to_text();
+
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
+
+int main(int argc, char* argv[]) {
+
+	try {
+		GrammarII G{
+			{"S", "A", "B", "C"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a", "A", "b", "C"}, {"B", "C"}}},
+			{"A", {{"a", "A"},{"a", "B"}}},
+			{"B", {{"b", "B"},{"C"}}},
+			{"C", {{"c", "C"},{ G_EPS}}}
+		}
+		};
+
+		auto str = G.to_text();
+
+		auto Gp = G.get_erase_e_transition();
+
+		auto str2 = Gp.to_text();
+		
 		system("pause");
 	}
 	catch (std::exception& ex)

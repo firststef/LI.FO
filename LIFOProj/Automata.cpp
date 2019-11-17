@@ -2,17 +2,33 @@
 #include <iterator>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 void Automaton::Delta::StateCatcher::operator>>(std::shared_ptr<State> state)
 {
-	auto new_state_idx = handler->automaton->map.find(state->identifier)->second;
+	auto el = handler->automaton->map.find(state->identifier);
+	if (el == handler->automaton->map.end())
+		throw std::exception("Target state not in automaton");
+	
+	handler->automaton->all_transitions[state_index][literal].insert(el->second);
+}
 
-	handler->automaton->all_transitions[state_index][literal].insert(new_state_idx);
+void Automaton::Delta::StateCatcher::operator>>(unsigned idx)
+{
+	if (idx >= handler->automaton->all_states.size())
+		throw std::exception("Target state not in automaton");
+	
+	handler->automaton->all_transitions[state_index][literal].insert(idx);
 }
 
 void Automaton::Delta::StateCatcher::operator=(std::shared_ptr<State> state)
 {
 	*this >> state;
+}
+
+void Automaton::Delta::StateCatcher::operator=(unsigned idx)
+{
+	*this >> idx;
 }
 
 Automaton::Delta::StateCatcher Automaton::Delta::operator()(std::shared_ptr<State> state, char literal)
@@ -35,6 +51,25 @@ Automaton::Delta::StateCatcher Automaton::Delta::operator()(std::shared_ptr<Stat
 		throw std::exception("State does not exist in automaton");
 }
 
+Automaton::Delta::StateCatcher Automaton::Delta::operator()(unsigned idx, char literal)
+{ 
+	if (idx < automaton->all_states.size())
+	{
+		bool found = false;
+		for (auto alpha : automaton->alphabet)
+			if (alpha == literal)
+				found = true;
+
+		if (not found)
+			throw std::exception("Literal not in alphabet");
+
+		StateCatcher catcher{ this, idx, literal };
+		return catcher;
+	}
+	else
+		throw std::exception("State does not exist in automaton");
+}
+
 Automaton::Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr<State>> list, std::set<char> alphabet)
 :initial(initial), delta({ this }), alphabet(alphabet)
 {
@@ -48,15 +83,23 @@ Automaton::Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr
 
 void Automaton::add_state(std::shared_ptr<State> state)
 {
-	auto element = map.find(state->identifier);
-	if (element == map.end())
+	map[state->identifier] = all_states.size();
+	all_states.push_back(state);
+	all_transitions.resize(all_transitions.size() + 1);
+}
+
+void Automaton::reset_states_identifiers()
+{
+	decltype(map) new_map;
+	unsigned idx = 0;
+	for (auto& pair: map)
 	{
-		map[state->identifier] = all_states.size();
-		all_states.push_back(state);
-		all_transitions.resize(all_transitions.size() + 1);
+		new_map[std::to_string(idx)] = pair.second;
+		all_states[idx]->identifier = std::to_string(idx);
+		idx++;
 	}
-	else
-		throw std::exception("State already exists in automaton");
+	map.clear();
+	map = new_map;
 }
 
 bool Automaton::is_deterministic()
@@ -71,7 +114,7 @@ bool Automaton::is_deterministic()
 
 		for (auto& pair : map)
 		{
-			if (pair.first == EPS || pair.second.size() != 1)
+			if (pair.first == A_EPS || pair.second.size() != 1)
 				return false;
 		}
 	}
@@ -93,14 +136,14 @@ std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Auto
 		next_vector.insert(next_vec_lit.begin(), next_vec_lit.end());
 		for (auto next_state : next_vec_lit)
 		{
-			auto epsilon_closure = get_next_vector_for_state_literal(next_state, EPS);
+			auto epsilon_closure = get_next_vector_for_state_literal(next_state, A_EPS);
 			next_vector.insert(epsilon_closure.begin(), epsilon_closure.end());
 		}
 
 		return next_vector;
 	};
 
-	auto initial_closure = get_next_vector_for_state_literal(0, EPS);
+	auto initial_closure = get_next_vector_for_state_literal(0, A_EPS);
 	initial_closure.insert(0);
 	table[0].first = std::set<unsigned>(initial_closure.begin(), initial_closure.end());
 
@@ -109,7 +152,7 @@ std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Auto
 		decltype(alphabet.begin()) alph_it;
 		for (alph_it = alphabet.begin(); alph_it != alphabet.end(); ++alph_it)
 		{
-			if (*alph_it == EPS)
+			if (*alph_it == A_EPS)
 			{
 				continue;
 			}
@@ -167,7 +210,7 @@ Automaton Automaton::get_deterministic_automaton()
 	}
 
 	auto new_alphabet = alphabet;
-	alphabet.erase(EPS);
+	alphabet.erase(A_EPS);
 	Automaton new_automaton(new_states[0], new_states, alphabet);
 
 	unsigned current_index = 0;
@@ -176,7 +219,7 @@ Automaton Automaton::get_deterministic_automaton()
 		auto let_it = alphabet.begin();
 		for (unsigned letter_num = 0; letter_num < alphabet.size();++letter_num, ++let_it)
 		{
-			if (*let_it == EPS)
+			if (*let_it == A_EPS)
 				continue;
 			
 			unsigned next_index_for_new = 0;
@@ -456,7 +499,7 @@ std::string Automaton::to_dot()
 			for (auto& el : trans.second)
 			{
 				content_stream << "\t" << "node" << idx << " -> " << "node" << el << "[label=\"";
-				if (trans.first == EPS)
+				if (trans.first == A_EPS)
 					content_stream << "EPS";
 				else
 					content_stream << trans.first;
@@ -470,13 +513,4 @@ std::string Automaton::to_dot()
 	dot_document += "}";
 
 	return dot_document;
-}
-
-void Automaton::save_to_dot(std::string filename)
-{
-	auto doc = to_dot();
-	
-	std::string name(filename + ".dot");
-	std::ofstream out(name.c_str());
-	out << doc << std::endl;
 }
