@@ -134,6 +134,39 @@ void test_remove_unproductive_symbols()
 	}
 }
 
+void test_get_reduced_form()
+{
+	try {
+		GrammarII G{
+			{"S", "A", "B", "C"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a"}, {"a", "A"},{ "b", "C"}}},
+			{"A", {{"a", "A", "B"}}},
+			{"B", {{"b", "a", "c"}}},
+			{"C", {{"a", "S", "b"}}}
+		}
+		};
+
+		auto str = G.to_text();
+
+		auto Gp = G.get_without_unproductive_symbols();
+
+		auto str1 = Gp.to_text();
+
+		auto Gpp = Gp.get_without_inaccessible_symbols();
+
+		auto str2 = Gpp.to_text();
+
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
+
 void test_remove_eps_rules()
 {
 	try {
@@ -151,7 +184,7 @@ void test_remove_eps_rules()
 
 		auto str = G.to_text();
 
-		auto Gp = G.get_erase_e_transition();
+		auto Gp = G.get_erase_eps_transitions();
 
 		auto str2 = Gp.to_text();
 
@@ -163,26 +196,39 @@ void test_remove_eps_rules()
 	}
 }
 
-int main(int argc, char* argv[]) {
-
+void test_erase_renaming_transitions()
+{
 	try {
 		GrammarII G{
-			{"S", "A", "B", "C"},
+			{"x", "y", "z"},
 		{"a", "b", "c"},
-		{"S"},
+		{"x"},
 		{
-			{"S", {{"a", "A", "b", "C"}, {"B", "C"}}},
-			{"A", {{"a", "A"},{"a", "B"}}},
-			{"B", {{"b", "B"},{"C"}}},
-			{"C", {{"c", "C"},{ G_EPS}}}
+			{"x", {{"y"}, {"a", "x"},{"a"}}},
+			{"y", {{"z"},{ "b", "y"}, {"b"}}},
+			{"z", {{"c", "z"},{ "c"}}}
 		}
 		};
 
 		auto str = G.to_text();
 
-		auto Gp = G.get_erase_e_transition();
+		auto Gp = G.get_erase_renaming_transitions();
 
 		auto str2 = Gp.to_text();
+
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+};
+
+
+int main(int argc, char* argv[]) {
+
+	try {
+		
 		
 		system("pause");
 	}
