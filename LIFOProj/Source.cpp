@@ -224,11 +224,53 @@ void test_erase_renaming_transitions()
 	}
 };
 
+void test_get_in_chomsky_form()
+{
+	try {
+
+		GrammarII G{
+			{"S", "A"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a", "S", "b"},{"c", "A", "c"}}},
+			{"A", {{"c"},{ "c", "A"}}}
+		}
+		};
+
+		auto txt = G.to_text();
+
+		auto Gp = G.get_in_chomsky_form();
+
+		auto txt2 = Gp.to_text(true);
+
+		system("pause");
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error occurred: " << ex.what() << std::endl;
+	}
+}
 
 int main(int argc, char* argv[]) {
 
 	try {
-		
+
+		GrammarII G{
+			{"S", "A"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"a", "S", "b"},{"c", "A", "c"}}},
+			{"A", {{"c"},{ "c", "A"}}}
+		}
+		};
+
+		auto txt = G.to_text();
+
+		auto Gp = G.get_in_chomsky_form();
+
+		auto txt2 = Gp.to_text(true);
 		
 		system("pause");
 	}

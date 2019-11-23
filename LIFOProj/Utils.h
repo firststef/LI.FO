@@ -1,26 +1,17 @@
 #pragma once
 #include <vector>
+#include <algorithm>
 
 template<typename T>
-bool operator | (const T &str, const std::vector<T>& vec)
+bool operator | (const T &el, const std::vector<T>& vec)
 {
-	for (auto& each : vec)
-	{
-		if (str == each)
-			return true;
-	}
-	return false;
+	return std::any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
 }
 
 template<typename T>
-bool operator | (const T &str, const std::set<T>& vec)
+bool operator | (const T &el, const std::set<T>& vec)
 {
-	for (auto& each : vec)
-	{
-		if (str == each)
-			return true;
-	}
-	return false;
+	return std::any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
 }
 
 #define in |

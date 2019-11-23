@@ -2,23 +2,37 @@
 #include <vector>
 #include <sstream>
 #include <set>
-#include "Utils.h"
 #include <deque>
+
+#include "Utils.h"
 
 #define G_EPS "#"
 
+using std::string;
+using std::to_string;
+using std::set;
+using std::vector;
+using std::pair;
+using std::function;
+using std::map;
+using std::deque;
+using std::ostringstream;
+using std::endl;
+using std::move;
+using std::back_inserter;
+
 struct GrammarII
 {
-	std::set<std::string> non_terminals;
-	std::set<std::string> terminals;
+	set<string> non_terminals;
+	set<string> terminals;
 
-	std::string start_symbol;
-	std::vector < std::pair < std::string, std::set<std::vector<std::string>>>> rules;
+	string start_symbol;
+	vector < pair < string, set<vector<string>>>> rules;
 
 	GrammarII get_without_unproductive_symbols()
 	{
-		std::set<std::string> n_i;
-		std::set<std::string> n_im1;
+		set<string> n_i;
+		set<string> n_im1;
 
 		do
 		{
@@ -70,7 +84,7 @@ struct GrammarII
 				}
 
 				if (not new_right.empty())
-					new_rules.push_back(std::make_pair(rule.first, new_right));
+					new_rules.emplace_back(make_pair(rule.first, new_right));
 			}
 		}
 
@@ -79,8 +93,8 @@ struct GrammarII
 
 	GrammarII get_without_inaccessible_symbols()
 	{
-		std::set<std::string> v_i = {start_symbol};
-		std::set<std::string> v_im1;
+		set<string> v_i = {start_symbol};
+		set<string> v_im1;
 
 		do
 		{
@@ -136,7 +150,7 @@ struct GrammarII
 				}
 
 				if (not new_right.empty())
-					new_rules.push_back(std::make_pair(rule.first, new_right));
+					new_rules.emplace_back(make_pair(rule.first, new_right));
 			}
 		}
 
@@ -151,18 +165,18 @@ struct GrammarII
 
 	GrammarII get_erase_eps_transitions()
 	{
-		std::set<std::string> n_0;
+		set<string> n_0;
 		for (auto& rule : rules)
 		{
-			if (std::vector<std::string>({  G_EPS  }) in rule.second)
+			if (vector<string>({  G_EPS  }) in rule.second)
 			{
 				n_0.insert(rule.first);
 			}
 
 		}
 
-		std::set<std::string> n_i;
-		std::set<std::string> n_im1;
+		set<string> n_i;
+		set<string> n_im1;
 
 		do
 		{
@@ -193,12 +207,12 @@ struct GrammarII
 		} while (n_i != n_im1);
 
 		unsigned new_idx = 0;
-		std::function<void(unsigned,unsigned,std::vector<std::string>, std::set<std::vector<std::string>>&)> bkt = 
-			[&](unsigned idx, unsigned max_size, std::vector<std::string> vec, std::set<std::vector<std::string>>& set) // idx = 0, maxsize = vec.size()
+		function<void(unsigned,unsigned,vector<string>, set<vector<string>>&)> bkt = 
+			[&](unsigned idx, unsigned max_size, vector<string> vec, set<vector<string>>& set) // idx = 0, maxsize = vec.size()
 		{
 			if (idx == max_size)
 			{
-				if (not vec.empty() && vec != std::vector<std::string>({G_EPS}))
+				if (not vec.empty() && vec != vector<string>({G_EPS}))
 					set.insert(vec);
 				return;
 			}
@@ -235,11 +249,11 @@ struct GrammarII
 
 		decltype(non_terminals) new_non_terminals = non_terminals;
 
-		std::string new_start_symbol = start_symbol;
+		string new_start_symbol = start_symbol;
 		if (start_symbol in n_i)
 		{
-			new_start_symbol = start_symbol + std::string("p");
-			new_rules.push_back(std::make_pair(new_start_symbol, std::set<std::vector<std::string>>({ { start_symbol},{ G_EPS }})));
+			new_start_symbol = start_symbol + string("p");
+			new_rules.emplace_back(make_pair(new_start_symbol, set<vector<string>>({ { start_symbol},{ G_EPS }})));
 			new_non_terminals.insert(new_start_symbol);
 		}
 
@@ -248,13 +262,13 @@ struct GrammarII
 
 	GrammarII get_erase_renaming_transitions()
 	{
-		std::vector<std::set<std::string>> n_classes;
+		vector<set<string>> n_classes;
 		n_classes.resize(non_terminals.size());
 
 		unsigned class_idx = 0;
 		for (auto& nt : non_terminals)
 		{
-			std::set<std::string> cl_im1;
+			set<string> cl_im1;
 			n_classes[class_idx] = { nt };
 
 			do
@@ -285,7 +299,7 @@ struct GrammarII
 		decltype(rules) new_rules;
 		for (auto& rule : rules)
 		{
-			std::set<std::vector<std::string>> new_left;
+			set<vector<string>> new_left;
 			for (auto& concat_symbol : rule.second)
 			{
 				if (concat_symbol.size() == 1)
@@ -299,7 +313,7 @@ struct GrammarII
 				}
 			}
 
-			new_rules.push_back(std::make_pair(rule.first, new_left));
+			new_rules.emplace_back(make_pair(rule.first, new_left));
 		}
 
 		decltype(rules) temp_copy = new_rules;
@@ -329,7 +343,7 @@ struct GrammarII
 		{
 			for (auto& concat_symbol : rule.second)
 			{
-				if (rule.first == start_symbol and concat_symbol.size() == 1 and concat_symbol.front() == std::string(G_EPS))
+				if (rule.first == start_symbol and concat_symbol.size() == 1 and concat_symbol.front() == string(G_EPS))
 					continue;
 				
 				if (concat_symbol.size() == 2)
@@ -358,78 +372,133 @@ struct GrammarII
 		g = g.get_erase_eps_transitions();
 		g = g.get_erase_renaming_transitions();
 
-		std::map<std::string, std::string> new_names;
-
-		auto change_name_everywhere = [&](std::string old_str, std::string new_str)
+		auto change_name_everywhere = [](string old_str, string new_str, GrammarII& g)
 		{
-			for (auto& rule : rules)
+			for (auto& rule : g.rules)
 			{
+				decltype(rule.second) new_set;
+				
 				for (auto& concat_symbol : rule.second)
 				{
+					vector<string> new_concat_symbol;
+					
 					for (auto& single_symbol : concat_symbol)
 					{
 						if (single_symbol == old_str)
-							const_cast<std::string&>(single_symbol) = new_str;
+							new_concat_symbol.push_back(new_str);
+						else
+							new_concat_symbol.push_back(single_symbol);
 					}
+
+					new_set.insert(new_concat_symbol);
 				}
+
+				rule.second = new_set;
 			}
 		};
 
 		unsigned x_i_index = 0;
-		for (auto& rule : rules)
+
+		bool loop_when_modified = true;
+		while (loop_when_modified)
 		{
-			for (auto& concat_symbol : rule.second)
-			{
-				if (concat_symbol.size() > 1)
-					continue;
-				
-				for (auto& single_symbol : concat_symbol)
+			loop_when_modified = false;
+
+			auto search = [&]() {
+				for (auto& rule : g.rules)
 				{
-					if (single_symbol in terminals)
+					for (auto& concat_symbol : rule.second)
 					{
-						auto new_nt = std::string("x") + std::to_string(x_i_index++);
-						change_name_everywhere(single_symbol, new_nt);
-						non_terminals.insert(new_nt);
-						rules.emplace_back(new_nt, std::set<std::vector<std::string>>({ { single_symbol} }));
+						if (concat_symbol.size() == 1 && concat_symbol.front() in g.terminals)
+							continue;
+
+						for (const auto single_symbol : concat_symbol)
+						{
+							if (single_symbol in g.terminals)
+							{
+								auto new_nt = "x" + to_string(x_i_index++);
+								change_name_everywhere(single_symbol, new_nt, g);
+								g.non_terminals.insert(new_nt);
+								g.rules.emplace_back(new_nt, set<vector<string>>({ { single_symbol} }));
+								loop_when_modified = true;
+
+								return;
+							}
+						}
 					}
 				}
-			}
+			};
+			search();
 		}
 
+		decltype(g.rules) new_rules;
 		unsigned z_i_index = 0;
-		for (auto& rule : rules)
+		for (auto& rule : g.rules)
 		{
+			decltype(rule.second) new_set;
+
 			for (auto& concat_symbol : rule.second)
 			{
-				if (concat_symbol.size() > 2)
-					continue;
+				vector<string> new_concat_symbol;
 
-				std::deque<std::string> row (concat_symbol.begin(), concat_symbol.end());
-
-				concat_symbol = {{row.front(), }}
-				
-				while( row.size() > 2)
+				if (concat_symbol.size() <= 2)
 				{
-					
+					new_set.insert(concat_symbol);
+					continue;
 				}
 
-				/*for (auto& single_symbol : concat_symbol)
+				deque<string> row(concat_symbol.begin(), concat_symbol.end());
+
+				while (row.size() > 2)
 				{
-					if (single_symbol in terminals)
-					{
-						auto new_nt = std::string("x") + std::to_string(x_i_index++);
-						change_name_everywhere(single_symbol, new_nt);
-						non_terminals.insert(new_nt);
-						rules.emplace_back(new_nt, std::set<std::vector<std::string>>({ { single_symbol} }));
-					}
-				}*/
+					auto back1 = row.back();
+					row.pop_back();
+					auto back2 = row.back();
+					row.pop_back();
+
+					auto new_z_nonterm = "z" + to_string(z_i_index++);
+
+					g.non_terminals.insert(new_z_nonterm);
+					new_rules.emplace_back(new_z_nonterm, set<vector<string>>({ { back2, back1 } }));
+					row.emplace_back(new_z_nonterm);
+				}
+				
+				new_set.insert({ row.begin(), row.end() });
 			}
+
+			rule.second = new_set;
 		}
+		move(new_rules.begin(), new_rules.end(), back_inserter(g.rules));
+
+		return g;
 	}
 	
-	std::string to_text()
+	string to_text(bool prettify = false)
 	{
-		std::ostringstream text;
+		if (prettify)
+		{
+			decltype(rules) new_rule_order;
+			std::sort(rules.begin(), rules.end(), [&](
+			                                   decltype(rules)::value_type el1, decltype(rules)::value_type el2) ->bool
+			{
+				if (el1.first == start_symbol)
+					return true;
+				if (el2.first == start_symbol)
+					return false;
+
+				const auto counter = [&](decltype(rules)::value_type el) 
+				{
+					unsigned count = 0;
+					for (auto& concat_symbol : el.second)
+						count += concat_symbol.size();
+					return count;
+				};
+				
+				return  counter(el1) != counter(el2) ? counter(el1) >= counter(el2) : el1.first < el2.first;
+			});
+		}
+		
+		ostringstream text;
 
 		for (auto& rule : rules)
 		{
@@ -444,13 +513,14 @@ struct GrammarII
 						text << "eps";
 					else
 						text << single_symbol;
+					text << " ";
 				}
 				if (rule.second.size() > 1 && idx <= rule.second.size() - 2)
 					text << "|";
 				idx++;
 			}
 
-			text << std::endl;
+			text << endl;
 		}
 
 		return text.str();
