@@ -3,13 +3,20 @@
 #include "BruteForceAlgo.h"
 #include "Automata.h"
 #include "Regex.h"
-#include "Grammar.h"
+#include "GrammarII.h"
 
-void save_to_dot(std::string data, std::string filename="document")
+using std::ofstream;
+using std::string;
+using std::endl;
+using std::exception;
+using std::cout;
+using std::cerr;
+
+void save_to_dot(string data, string filename="document")
 {
-	std::string name(filename + ".dott");
-	std::ofstream out(name.c_str());
-	out << data << std::endl;
+	string name(filename + ".dott");
+	ofstream out(name.c_str());
+	out << data << endl;
 }
 
 void test_minimalistic()
@@ -23,9 +30,9 @@ void test_minimalistic()
 		for (auto row : res)
 		{
 			for (auto col : row) {
-				std::cout << col << " ";
+				cout << col << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		auto new_automaton = a.get_minimal_automaton();
@@ -34,9 +41,9 @@ void test_minimalistic()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -50,20 +57,20 @@ void test_deterministic()
 
 		for (auto row : res)
 		{
-			std::cout << "[";
+			cout << "[";
 			for (auto el : row.first) {
-				std::cout << el << ",";
+				cout << el << ",";
 			}
-			std::cout << "] : ";
+			cout << "] : ";
 
 			for (auto lit : row.second) {
-				std::cout << " [";
+				cout << " [";
 				for (auto el : lit) {
-					std::cout << el << ",";
+					cout << el << ",";
 				}
-				std::cout << "]";
+				cout << "]";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		auto new_automaton = a.get_deterministic_automaton();
@@ -76,9 +83,9 @@ void test_deterministic()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -99,9 +106,9 @@ void test_regex_to_automaton()
 		auto doc = a.to_dot();
 		save_to_dot(doc);
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -128,9 +135,9 @@ void test_remove_unproductive_symbols()
 		
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -161,9 +168,9 @@ void test_get_reduced_form()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -190,9 +197,9 @@ void test_remove_eps_rules()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -218,9 +225,9 @@ void test_erase_renaming_transitions()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 };
 
@@ -246,9 +253,40 @@ void test_get_in_chomsky_form()
 
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
+	}
+}
+
+void test_cyk()
+{
+	try {
+
+		GrammarII G{
+			{"S", "X", "Y", "Z"},
+		{"a", "b", "c"},
+		{"S"},
+		{
+			{"S", {{"X", "Y"}}},
+			{"X", {{"a"},{ "X", "Y"}}},
+			{"Y", {{"Y", "Z"}, {"a"}, {"b"}}},
+			{"Z", {{"c"}}}
+		}
+		};
+
+		auto txt = G.to_text();
+
+		auto test = G.test_with_cyk("abc");
+		auto test2 = G.test_with_cyk("acb");
+		auto test3 = G.test_with_cyk("abd");
+		auto test4 = G.test_with_cyk("aab");
+
+		system("pause");
+	}
+	catch (exception& ex)
+	{
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 }
 
@@ -256,27 +294,13 @@ int main(int argc, char* argv[]) {
 
 	try {
 
-		GrammarII G{
-			{"S", "A"},
-		{"a", "b", "c"},
-		{"S"},
-		{
-			{"S", {{"a", "S", "b"},{"c", "A", "c"}}},
-			{"A", {{"c"},{ "c", "A"}}}
-		}
-		};
-
-		auto txt = G.to_text();
-
-		auto Gp = G.get_in_chomsky_form();
-
-		auto txt2 = Gp.to_text(true);
+		
 		
 		system("pause");
 	}
-	catch (std::exception& ex)
+	catch (exception& ex)
 	{
-		std::cerr << "Error occurred: " << ex.what() << std::endl;
+		cerr << "Error occurred: " << ex.what() << endl;
 	}
 	
 	return 1;

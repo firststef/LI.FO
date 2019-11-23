@@ -2,16 +2,20 @@
 #include <vector>
 #include <algorithm>
 
+using std::vector;
+using std::any_of;
+using std::set;
+
 template<typename T>
-bool operator | (const T &el, const std::vector<T>& vec)
+bool operator | (const T &el, const vector<T>& vec)
 {
-	return std::any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
+	return any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
 }
 
 template<typename T>
-bool operator | (const T &el, const std::set<T>& vec)
+bool operator | (const T &el, const set<T>& vec)
 {
-	return std::any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
+	return any_of(vec.begin(), vec.end(), [&](const T &e) {return e == el; });
 }
 
 #define in |

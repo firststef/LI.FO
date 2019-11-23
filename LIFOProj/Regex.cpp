@@ -1,6 +1,10 @@
-#include "Regex.h"
 #include <deque>
 #include <sstream>
+#include <functional>
+
+#include "Regex.h"
+
+using std::function;
 
 std::string RegexTree::to_dot()
 {
@@ -187,22 +191,22 @@ Automaton RegexTree::to_automaton()
 		switch (tree.op)
 		{
 		case '|':
-			new_automaton.delta(tree.i - 1, A_EPS) >> tree.ts->i - 1;
-			new_automaton.delta(tree.i - 1, A_EPS) >> tree.td->i - 1;
-			new_automaton.delta(tree.ts->f - 1, A_EPS) >> tree.f - 1;
-			new_automaton.delta(tree.td->f - 1, A_EPS) >> tree.f - 1;
+			new_automaton.delta(tree.i - 1, A_EPS) >> (tree.ts->i - 1);
+			new_automaton.delta(tree.i - 1, A_EPS) >> (tree.td->i - 1);
+			new_automaton.delta(tree.ts->f - 1, A_EPS) >> (tree.f - 1);
+			new_automaton.delta(tree.td->f - 1, A_EPS) >> (tree.f - 1);
 			break;
 		case '.':
-			new_automaton.delta(tree.ts->f - 1, A_EPS) >> tree.td->i - 1;
+			new_automaton.delta(tree.ts->f - 1, A_EPS) >> (tree.td->i - 1);
 			break;
 		case '*':
-			new_automaton.delta(tree.i - 1, A_EPS) >> tree.f - 1;
-			new_automaton.delta(tree.i - 1, A_EPS) >> tree.ts->i - 1;
-			new_automaton.delta(tree.ts->f - 1, A_EPS) >> tree.ts->i - 1;
-			new_automaton.delta(tree.ts->f - 1, A_EPS) >> tree.f - 1;
+			new_automaton.delta(tree.i - 1, A_EPS) >> (tree.f - 1);
+			new_automaton.delta(tree.i - 1, A_EPS) >> (tree.ts->i - 1);
+			new_automaton.delta(tree.ts->f - 1, A_EPS) >> (tree.ts->i - 1);
+			new_automaton.delta(tree.ts->f - 1, A_EPS) >> (tree.f - 1);
 			break;
 		default:
-			new_automaton.delta(tree.i - 1, tree.op) >> tree.f - 1;
+			new_automaton.delta(tree.i - 1, tree.op) >> (tree.f - 1);
 		}
 
 		if (tree.ts)

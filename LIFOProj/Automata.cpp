@@ -1,14 +1,26 @@
 #include "Automata.h"
-#include <iterator>
+#include <utility>
+#include <vector>
+#include <memory>
+#include <functional>
+#include <map>
+#include <set>
 #include <string>
 #include <fstream>
 #include <sstream>
 
-void Automaton::Delta::StateCatcher::operator>>(std::shared_ptr<State> state)
+using std::exception;
+using std::to_string;
+using std::function;
+using std::swap;
+using std::make_pair;
+using std::ostringstream;
+
+void Automaton::Delta::StateCatcher::operator>>(shared_ptr<State> state)
 {
 	auto el = handler->automaton->map.find(state->identifier);
 	if (el == handler->automaton->map.end())
-		throw std::exception("Target state not in automaton");
+		throw exception("Target state not in automaton");
 	
 	handler->automaton->all_transitions[state_index][literal].insert(el->second);
 }
@@ -16,12 +28,12 @@ void Automaton::Delta::StateCatcher::operator>>(std::shared_ptr<State> state)
 void Automaton::Delta::StateCatcher::operator>>(unsigned idx)
 {
 	if (idx >= handler->automaton->all_states.size())
-		throw std::exception("Target state not in automaton");
+		throw exception("Target state not in automaton");
 	
 	handler->automaton->all_transitions[state_index][literal].insert(idx);
 }
 
-void Automaton::Delta::StateCatcher::operator=(std::shared_ptr<State> state)
+void Automaton::Delta::StateCatcher::operator=(shared_ptr<State> state)
 {
 	*this >> state;
 }
@@ -31,7 +43,7 @@ void Automaton::Delta::StateCatcher::operator=(unsigned idx)
 	*this >> idx;
 }
 
-Automaton::Delta::StateCatcher Automaton::Delta::operator()(std::shared_ptr<State> state, char literal)
+Automaton::Delta::StateCatcher Automaton::Delta::operator()(shared_ptr<State> state, char literal)
 {
 	auto element = automaton->map.find(state->identifier);
 	if (element != automaton->map.end())
@@ -42,13 +54,13 @@ Automaton::Delta::StateCatcher Automaton::Delta::operator()(std::shared_ptr<Stat
 				found = true;
 
 		if (not found)
-			throw std::exception("Literal not in alphabet");
+			throw exception("Literal not in alphabet");
 
 		StateCatcher catcher{this, element->second, literal};
 		return catcher;
 	}
 	else
-		throw std::exception("State does not exist in automaton");
+		throw exception("State does not exist in automaton");
 }
 
 Automaton::Delta::StateCatcher Automaton::Delta::operator()(unsigned idx, char literal)
@@ -61,16 +73,16 @@ Automaton::Delta::StateCatcher Automaton::Delta::operator()(unsigned idx, char l
 				found = true;
 
 		if (not found)
-			throw std::exception("Literal not in alphabet");
+			throw exception("Literal not in alphabet");
 
 		StateCatcher catcher{ this, idx, literal };
 		return catcher;
 	}
 	else
-		throw std::exception("State does not exist in automaton");
+		throw exception("State does not exist in automaton");
 }
 
-Automaton::Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr<State>> list, std::set<char> alphabet)
+Automaton::Automaton(shared_ptr<State> initial, vector<shared_ptr<State>> list, set<char> alphabet)
 :initial(initial), delta({ this }), alphabet(alphabet)
 {
 	add_state(initial);
@@ -81,7 +93,7 @@ Automaton::Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr
 	}
 }
 
-void Automaton::add_state(std::shared_ptr<State> state)
+void Automaton::add_state(shared_ptr<State> state)
 {
 	map[state->identifier] = all_states.size();
 	all_states.push_back(state);
@@ -94,8 +106,8 @@ void Automaton::reset_states_identifiers()
 	unsigned idx = 0;
 	for (auto& pair: map)
 	{
-		new_map[std::to_string(idx)] = pair.second;
-		all_states[idx]->identifier = std::to_string(idx);
+		new_map[to_string(idx)] = pair.second;
+		all_states[idx]->identifier = to_string(idx);
 		idx++;
 	}
 	map.clear();
@@ -121,16 +133,16 @@ bool Automaton::is_deterministic()
 	return true;
 }
 
-std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Automaton::get_rel_table_deterministic()
+vector<pair<set<unsigned>, vector<set<unsigned>>>> Automaton::get_rel_table_deterministic()
 {
-	std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> table;
+	vector<pair<set<unsigned>, vector<set<unsigned>>>> table;
 
 	table.resize(1);
 	unsigned current_row = 0;
 
-	std::function<std::set<unsigned>(unsigned,char)> get_next_vector_for_state_literal = [&](unsigned idx, char literal) -> std::set<unsigned>
+	function<set<unsigned>(unsigned,char)> get_next_vector_for_state_literal = [&](unsigned idx, char literal) -> set<unsigned>
 	{
-		std::set<unsigned> next_vector;
+		set<unsigned> next_vector;
 		auto& next_vec_lit = all_transitions[idx][literal];
 
 		next_vector.insert(next_vec_lit.begin(), next_vec_lit.end());
@@ -145,7 +157,7 @@ std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Auto
 
 	auto initial_closure = get_next_vector_for_state_literal(0, A_EPS);
 	initial_closure.insert(0);
-	table[0].first = std::set<unsigned>(initial_closure.begin(), initial_closure.end());
+	table[0].first = set<unsigned>(initial_closure.begin(), initial_closure.end());
 
 	while (table.back().second.empty())
 	{
@@ -157,7 +169,7 @@ std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> Auto
 				continue;
 			}
 			
-			std::set<unsigned> current_set;
+			set<unsigned> current_set;
 			
 			for (auto& leaving_state : table[current_row].first)
 			{
@@ -194,19 +206,19 @@ Automaton Automaton::get_deterministic_automaton()
 {
 	auto table = get_rel_table_deterministic();
 
-	std::vector<std::shared_ptr<State>> new_states;
+	vector<shared_ptr<State>> new_states;
 	for (auto& pair : table)
 	{
-		std::string name("[");
+		string name("[");
 		State::Type type = State::NON_FINAL;
 		for (auto& el : pair.first)
 		{
-			name += std::to_string(el);
-			name += std::string(",");
+			name += to_string(el);
+			name += string(",");
 			type = State::Type(type * all_states[el]->type);
 		}
-		name += std::string("]");
-		new_states.push_back(std::make_shared<State>(State{ name, State::Type(type) }));
+		name += string("]");
+		new_states.push_back(make_shared<State>(State{ name, State::Type(type) }));
 	}
 
 	auto new_alphabet = alphabet;
@@ -238,15 +250,15 @@ Automaton Automaton::get_deterministic_automaton()
 	return new_automaton;
 }
 
-std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
+vector<vector<bool>> Automaton::get_rel_table_minimalistic()
 {
 	if (not is_deterministic())
-		throw std::exception("Automaton is not deterministic");
+		throw exception("Automaton is not deterministic");
 
 	const auto n = all_states.size();
 
 	//Separable, inseparable table
-	std::vector<std::vector<bool>> table;
+	vector<vector<bool>> table;
 
 	table.resize(n);
 	for (auto& vec : table)
@@ -255,7 +267,7 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 	}
 
 	//Dependency table
-	std::vector<std::vector<std::vector<std::pair<unsigned, unsigned>>>> dependency;
+	vector<vector<vector<pair<unsigned, unsigned>>>> dependency;
 
 	dependency.resize(n);
 	for (auto& vec : dependency)
@@ -275,7 +287,7 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 		}
 	}
 
-	std::function<void(unsigned, unsigned)> update_table = [&](unsigned qi, unsigned qj)
+	function<void(unsigned, unsigned)> update_table = [&](unsigned qi, unsigned qj)
 	{
 		printf("Updating (%d,%d)\n", qi, qj);
 		table[qi][qj] = 1;
@@ -308,7 +320,7 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 									//Tuple elements need to be in order
 									if (qip > qjp)
 									{
-										std::swap(qip, qjp);
+										swap(qip, qjp);
 									}
 
 									if (table[qip][qjp] == 1)
@@ -342,7 +354,7 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 										//Tuple elements need to be in order
 										if (qip > qjp)
 										{
-											std::swap(qip, qjp);
+											swap(qip, qjp);
 										}
 
 										printf("With %c to (%d,%d) ", trans_i.first, qip, qjp);
@@ -350,7 +362,7 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 										if (qip != qjp && (qi != qip || qj != qjp) && (qj != qip || qi != qjp))
 										{
 											printf("Adding to list\n");
-											dependency[qip][qjp].emplace_back(std::make_pair(qi, qj));
+											dependency[qip][qjp].emplace_back(make_pair(qi, qj));
 										}
 										else
 											printf("No transition\n");
@@ -370,13 +382,13 @@ std::vector<std::vector<bool>> Automaton::get_rel_table_minimalistic()
 Automaton Automaton::get_minimal_automaton()
 {
 	if (not is_deterministic())
-		throw std::exception("Automaton is not deterministic");
+		throw exception("Automaton is not deterministic");
 
 	auto table = get_rel_table_minimalistic();
 	const auto n = table[0].size();
 
 	//Classes vector
-	std::vector<std::vector<unsigned>> classes;
+	vector<vector<unsigned>> classes;
 	classes.resize(n);
 
 	//Creating classes
@@ -404,7 +416,7 @@ Automaton Automaton::get_minimal_automaton()
 		return false;
 	};
 
-	std::vector<std::pair<unsigned, std::shared_ptr<State>>> indexed_new_states;
+	vector<pair<unsigned, shared_ptr<State>>> indexed_new_states;
 	for (unsigned i = 0; i < classes.size(); ++i)
 	{
 		if (idx_in_other_classes(i))
@@ -414,12 +426,12 @@ Automaton Automaton::get_minimal_automaton()
 		auto type = state->type;
 		auto name = state->identifier;
 
-		indexed_new_states.emplace_back(std::make_pair(i, std::make_shared<State>(State{
-			                                               std::string("[") + name + std::string("]"), type
+		indexed_new_states.emplace_back(make_pair(i, make_shared<State>(State{
+			                                               string("[") + name + string("]"), type
 		                                               })));
 	}
 
-	std::shared_ptr<State> new_initial_state;
+	shared_ptr<State> new_initial_state;
 	for (auto class_itr : classes)
 	{
 		for (auto st_idx : class_itr)
@@ -430,7 +442,7 @@ Automaton Automaton::get_minimal_automaton()
 		}
 	}
 
-	std::vector<std::shared_ptr<State>> new_states;
+	vector<shared_ptr<State>> new_states;
 	for (auto& pair : indexed_new_states)
 	{
 		new_states.push_back(pair.second);
@@ -455,7 +467,7 @@ Automaton Automaton::get_minimal_automaton()
 	{
 		for (auto& literal : alphabet) //looking for all literals
 		{
-			std::shared_ptr<State> next_state;
+			shared_ptr<State> next_state;
 			auto class_idx = get_class_for_idx(new_state_pair.first);
 			for (auto& pair : indexed_new_states)
 			{
@@ -473,13 +485,13 @@ Automaton Automaton::get_minimal_automaton()
 	return new_automaton;
 }
 
-std::string Automaton::to_dot()
+string Automaton::to_dot()
 {
-	std::string dot_document;
+	string dot_document;
 	dot_document += "digraph A {\n\trankdir = LR;\n";
 
-	std::ostringstream init_stream;
-	std::ostringstream content_stream;
+	ostringstream init_stream;
+	ostringstream content_stream;
 
 	for (unsigned idx = 0; idx < all_states.size(); idx++)
 	{

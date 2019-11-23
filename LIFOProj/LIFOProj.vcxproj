@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Automata.cpp" />
+    <ClCompile Include="GrammarII.cpp" />
     <ClCompile Include="Regex.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
@@ -125,7 +126,7 @@
   <ItemGroup>
     <ClInclude Include="Automata.h" />
     <ClInclude Include="BruteForceAlgo.h" />
-    <ClInclude Include="Grammar.h" />
+    <ClInclude Include="GrammarII.h" />
     <ClInclude Include="Regex.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>

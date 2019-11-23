@@ -1,16 +1,23 @@
 #pragma once
-#include <utility>
-#include <vector>
-#include <memory>
-#include <functional>
-#include <map>
+#include <string>
 #include <set>
+#include <vector>
+#include <map>
 
 #define A_EPS 0
 
+using std::string;
+using std::shared_ptr;
+using std::set;
+using std::vector;
+using std::map;
+using std::set;
+using std::pair;
+using std::make_shared;
+
 struct State
 {
-	std::string identifier;
+	string identifier;
 	
 	enum Type
 	{
@@ -19,19 +26,19 @@ struct State
 	} type;
 };
 
-#define INSTANTIATE_STATE_OBJ(state, type) auto state = std::make_shared<State>(State{#state, State::type});
+#define INSTANTIATE_STATE_OBJ(state, type) auto state = make_shared<State>(State{#state, State::type});
 
 struct Automaton
 {
-	std::shared_ptr<State> initial;
-	std::vector<std::shared_ptr<State>> all_states;
+	shared_ptr<State> initial;
+	vector<shared_ptr<State>> all_states;
 
-	std::set<char> alphabet;
+	set<char> alphabet;
 	
-	std::vector<std::map<char, std::set<unsigned>>> all_transitions;
+	vector<map<char, set<unsigned>>> all_transitions;
 
 	//Map for indexing states
-	std::map<std::string, unsigned> map;
+	map<string, unsigned> map;
 
 	struct Delta
 	{
@@ -44,31 +51,31 @@ struct Automaton
 			unsigned state_index;
 			char literal;
 
-			void operator>>(std::shared_ptr<State> state);
+			void operator>>(shared_ptr<State> state);
 			void operator>>(unsigned idx);
 
-			void operator=(std::shared_ptr<State> state);
+			void operator=(shared_ptr<State> state);
 			void operator=(unsigned idx);
 		};
 
-		StateCatcher operator()(std::shared_ptr<State> state, char literal);
+		StateCatcher operator()(shared_ptr<State> state, char literal);
 		StateCatcher operator()(unsigned idx, char literal);
 	} delta;
 
-	Automaton(std::shared_ptr<State> initial, std::vector<std::shared_ptr<State>> list, std::set<char> alphabet);
+	Automaton(shared_ptr<State> initial, vector<shared_ptr<State>> list, set<char> alphabet);
 
-	void add_state(std::shared_ptr<State> state);
+	void add_state(shared_ptr<State> state);
 	void reset_states_identifiers();
 	
 	bool is_deterministic();
 
-	std::vector<std::pair<std::set<unsigned>, std::vector<std::set<unsigned>>>> get_rel_table_deterministic();
+	vector<pair<set<unsigned>, vector<set<unsigned>>>> get_rel_table_deterministic();
 	Automaton get_deterministic_automaton();
 
-	std::vector<std::vector<bool>> get_rel_table_minimalistic();
+	vector<vector<bool>> get_rel_table_minimalistic();
 	Automaton get_minimal_automaton();
 
-	std::string to_dot();
+	string to_dot();
 };
 
 inline Automaton automaton1()
