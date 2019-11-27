@@ -290,11 +290,31 @@ void test_cyk()
 	}
 }
 
+void test_automaton_accept()
+{
+	try {
+
+		auto a = automaton1();
+		auto res1_2 = a.test("aabb");//false
+		auto res1_1 = a.test("aab");//true
+		//save_to_dot(a.to_dot(), "a1");
+
+		a = automaton2();
+		auto res2_1 = a.test("abaa");//true
+		auto res2_2 = a.test("abaaab");//false
+		auto res2_3 = a.test("abaabaa");//true
+
+		system("pause");
+	}
+	catch (exception& ex)
+	{
+		cerr << "Error occurred: " << ex.what() << endl;
+	}
+}
+
 int main(int argc, char* argv[]) {
 
 	try {
-
-		
 		
 		system("pause");
 	}

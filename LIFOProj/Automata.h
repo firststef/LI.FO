@@ -75,6 +75,8 @@ struct Automaton
 	vector<vector<bool>> get_rel_table_minimalistic();
 	Automaton get_minimal_automaton();
 
+	bool test(std::string word);
+
 	string to_dot();
 };
 

@@ -6,7 +6,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <fstream>
 #include <sstream>
 
 using std::exception;
@@ -18,7 +17,7 @@ using std::ostringstream;
 
 void Automaton::Delta::StateCatcher::operator>>(shared_ptr<State> state)
 {
-	auto el = handler->automaton->map.find(state->identifier);
+	const auto el = handler->automaton->map.find(state->identifier);
 	if (el == handler->automaton->map.end())
 		throw exception("Target state not in automaton");
 	
@@ -483,6 +482,40 @@ Automaton Automaton::get_minimal_automaton()
 	}
 
 	return new_automaton;
+}
+
+bool Automaton::test(std::string word)
+{
+	std::function<bool(unsigned, std::shared_ptr<State>)> traverse_function = [&](unsigned idx, std::shared_ptr<State> current_state) -> bool
+	{
+		if (idx >= word.size() && current_state->type == State::FINAL)
+			return true;
+		
+		const auto el = map.find(current_state->identifier);
+		auto trans = all_transitions[el->second];
+
+		const auto next_set = trans.find(word[idx]);
+		if (next_set != trans.end()) {
+			for (auto& next : next_set->second)
+			{
+				if(traverse_function(idx + 1, all_states[next]))
+					return true;
+			}
+		}
+		auto next_eps = trans.find(A_EPS);
+		if (next_eps != trans.end()) {
+			for (auto& next : next_eps->second)
+			{
+				if (next_eps->first == A_EPS)
+					if (traverse_function(idx, all_states[next]))
+						return true;
+			}
+		}
+
+		return false;
+	};
+
+	return traverse_function(0, initial);
 }
 
 string Automaton::to_dot()
