@@ -37,6 +37,7 @@ This generates the following automaton:
 You can test if a word is accepted by this automaton:
 
 bool res1 = a.test("aabb"); // **false**
+
 bool res2 = a.test("aab"); // **true**
 
 <h3>Some of the functionalities LiFo has:</h3>
@@ -44,10 +45,13 @@ bool res2 = a.test("aab"); // **true**
 **Automata**:
 
 method: is_deterministic();
+
 return object Automaton: get_deterministic_automaton();
+
 return object Automaton: get_minimal_automaton();
 
 method: test(string);
+
 visualization .PNG: to_dot();
 
 **Grammar**:
@@ -58,13 +62,17 @@ coming soon
 GrammarII:
 
 return object GrammarII: get_without_unproductive_symbols();
+
 return object GrammarII: get_without_inaccessible_symbols();
+
 return object GrammarII: get_reduced_form();
 
 return object GrammarII: get_erase_eps_transitions();
+
 return object GrammarII: get_erase_renaming_transitions();
 
 method: is_in_chomsky_form();
+
 return object GrammarII: get_in_chomsky_form();
 
 method: test_with_cyk(string);
@@ -74,5 +82,6 @@ visualisation TEXT: to_text();
 **Regex**:
 
 return object Automaton: to_automaton();
+
 visualization .PNG: to_dot();
 
