@@ -39,7 +39,7 @@ You can test if a word is accepted by this automaton:
 bool res1 = a.test("aabb"); // **false**
 bool res2 = a.test("aab"); // **true**
 
-<h3>Some of the functionalities LiFo has:<h3>
+<h3>Some of the functionalities LiFo has:</h3>
 
 **Automata**:
 
