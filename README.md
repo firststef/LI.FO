@@ -29,3 +29,8 @@ a.delta(s5, 'b') >> s3;
 ```
 This generates the following automaton:
 ![A1](https://i.imgur.com/kWdTcgO.png "A1")
+
+You can test if a word is accepted by this automaton:
+
+bool res1 = a.test("aabb"); // **false**
+bool res2 = a.test("aab"); // **true**
