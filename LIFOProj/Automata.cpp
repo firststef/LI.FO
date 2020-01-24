@@ -16,25 +16,6 @@ using std::make_pair;
 using std::ostringstream;
 
 template <typename StateType, typename AlphabetType, typename TransitionType>
-void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator>>(shared_ptr<StateType> state)
-{
-	const auto el = handler->automaton->map.find(state->identifier);
-	if (el == handler->automaton->map.end())
-		throw exception("Target state not in automaton");
-
-	handler->automaton->all_transitions[state_index][literal].insert(el->second);
-}
-
-template <typename StateType, typename AlphabetType, typename TransitionType>
-void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator>>(unsigned idx)
-{
-	if (idx >= handler->automaton->all_states.size())
-		throw exception("Target state not in automaton");
-	
-	handler->automaton->all_transitions[state_index][literal].insert(idx);
-}
-
-template <typename StateType, typename AlphabetType, typename TransitionType>
 void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator=(shared_ptr<StateType> state)
 {
 	*this >> state;
@@ -47,69 +28,11 @@ void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::o
 }
 
 template <typename StateType, typename AlphabetType, typename TransitionType>
-typename IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher 
-IAutomaton<StateType, AlphabetType,TransitionType>::Delta::operator()(shared_ptr<StateType> state, TransitionType literal)
-{
-	auto element = automaton->map.find(state->identifier);
-	if (element != automaton->map.end())
-	{
-		bool found = false;
-		for (auto alpha : automaton->alphabet)
-			if (alpha == literal)
-				found = true;
-
-		if (not found)
-			throw exception("Literal not in alphabet");
-
-		StateCatcher catcher{this, element->second, literal};
-		return catcher;
-	}
-	else
-		throw exception("SymbolAutomatonState does not exist in automaton");
-}
-
-template <typename StateType, typename AlphabetType, typename TransitionType>
-typename IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher 
-IAutomaton<StateType, AlphabetType,TransitionType>::Delta::operator()(unsigned idx, TransitionType literal)
-{
-	if (idx < automaton->all_states.size())
-	{
-		bool found = false;
-		for (auto alpha : automaton->alphabet)
-			if (alpha == literal)
-				found = true;
-
-		if (not found)
-			throw exception("Literal not in alphabet");
-
-		StateCatcher catcher{this, idx, literal};
-		return catcher;
-	}
-	else
-		throw exception("SymbolAutomatonState does not exist in automaton");
-}
-
-template <typename StateType, typename AlphabetType, typename TransitionType>
 void IAutomaton<StateType, AlphabetType, TransitionType>::add_state(shared_ptr<StateType> state)
 {
-	map[state->identifier] = all_states.size();
+	index_map[state->identifier] = all_states.size();
 	all_states.push_back(state);
 	all_transitions.resize(all_transitions.size() + 1);
-}
-
-template <typename StateType, typename AlphabetType, typename TransitionType>
-void IAutomaton<StateType, AlphabetType, TransitionType>::reset_states_identifiers()
-{
-	decltype(map) new_map;
-	unsigned idx = 0;
-	for (auto& pair : map)
-	{
-		new_map[to_string(idx)] = pair.second;
-		all_states[idx]->identifier = to_string(idx);
-		idx++;
-	}
-	map.clear();
-	map = new_map;
 }
 
 bool Automaton::is_deterministic()
@@ -251,7 +174,11 @@ Automaton Automaton::get_deterministic_automaton()
 vector<vector<bool>> Automaton::get_rel_table_minimalistic()
 {
 	if (not is_deterministic())
-		throw exception("Automaton is not deterministic");
+#ifdef _WIN32
+        throw exception("Automaton is not deterministic");
+#elif __linux__
+        throw exception();
+#endif
 
 	const auto n = all_states.size();
 
@@ -380,7 +307,11 @@ vector<vector<bool>> Automaton::get_rel_table_minimalistic()
 Automaton Automaton::get_minimal_automaton()
 {
 	if (not is_deterministic())
+#ifdef _WIN32
 		throw exception("Automaton is not deterministic");
+#elif __linux__
+        throw exception();
+#endif
 
 	auto table = get_rel_table_minimalistic();
 	const auto n = table[0].size();
@@ -490,7 +421,7 @@ bool Automaton::test(std::string word)
 		if (idx >= word.size() && current_state->data == SymbolAutomatonStateType::FINAL)
 			return true;
 		
-		const auto el = map.find(current_state->identifier);
+		const auto el = index_map.find(current_state->identifier);
 		auto trans = all_transitions[el->second];
 
 		const auto next_set = trans.find(word[idx]);

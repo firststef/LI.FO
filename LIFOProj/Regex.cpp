@@ -6,6 +6,8 @@
 
 using std::function;
 
+template struct IAutomaton<State<SymbolAutomatonStateType >, char, char>;
+
 std::string RegexTree::to_dot()
 {
 	std::string dot_document;
@@ -165,6 +167,9 @@ Automaton RegexTree::to_automaton()
 	alphabet.insert(A_EPS);
 	Automaton new_automaton(new_states[0], new_states, alphabet);//Automaton initial q init is awkward
 
+	auto& x = new_automaton.delta;
+	auto z = x(1, 'a');
+
 	std::function<void(RegexTree& tree)> post = [&](RegexTree& tree)
 	{
 		if (tree.ts)
@@ -188,6 +193,7 @@ Automaton RegexTree::to_automaton()
 
 	std::function<void(RegexTree& tree)> pre2 = [&](RegexTree& tree)
 	{
+        new_automaton.delta(tree.i - 1, A_EPS) >> (tree.ts->i - 1);
 		switch (tree.op)
 		{
 		case '|':

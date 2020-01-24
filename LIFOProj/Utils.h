@@ -20,9 +20,9 @@ bool operator | (const T &el, const set<T>& vec)
 }
 
 //template<typename T, template<typename C> class V, typename C>
-//bool operator | (const T &el, const std::map<T, V<C>>& map)
+//bool operator | (const T &el, const std::index_map<T, V<C>>& index_map)
 //{
-//	return map.find(el) != map.end();
+//	return index_map.find(el) != index_map.end();
 //}
 
 #define in |

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <cstring>
 
 constexpr auto MAX_RULES = 25;
 constexpr auto MAX_WORD_LENGTH = 3;
