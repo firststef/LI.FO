@@ -15,16 +15,18 @@ using std::swap;
 using std::make_pair;
 using std::ostringstream;
 
-void Automaton::Delta::StateCatcher::operator>>(shared_ptr<State> state)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator>>(shared_ptr<StateType> state)
 {
 	const auto el = handler->automaton->map.find(state->identifier);
 	if (el == handler->automaton->map.end())
 		throw exception("Target state not in automaton");
-	
+
 	handler->automaton->all_transitions[state_index][literal].insert(el->second);
 }
 
-void Automaton::Delta::StateCatcher::operator>>(unsigned idx)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator>>(unsigned idx)
 {
 	if (idx >= handler->automaton->all_states.size())
 		throw exception("Target state not in automaton");
@@ -32,17 +34,21 @@ void Automaton::Delta::StateCatcher::operator>>(unsigned idx)
 	handler->automaton->all_transitions[state_index][literal].insert(idx);
 }
 
-void Automaton::Delta::StateCatcher::operator=(shared_ptr<State> state)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator=(shared_ptr<StateType> state)
 {
 	*this >> state;
 }
 
-void Automaton::Delta::StateCatcher::operator=(unsigned idx)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher::operator=(unsigned idx)
 {
 	*this >> idx;
 }
 
-Automaton::Delta::StateCatcher Automaton::Delta::operator()(shared_ptr<State> state, char literal)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+typename IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher 
+IAutomaton<StateType, AlphabetType,TransitionType>::Delta::operator()(shared_ptr<StateType> state, TransitionType literal)
 {
 	auto element = automaton->map.find(state->identifier);
 	if (element != automaton->map.end())
@@ -59,11 +65,13 @@ Automaton::Delta::StateCatcher Automaton::Delta::operator()(shared_ptr<State> st
 		return catcher;
 	}
 	else
-		throw exception("State does not exist in automaton");
+		throw exception("SymbolAutomatonState does not exist in automaton");
 }
 
-Automaton::Delta::StateCatcher Automaton::Delta::operator()(unsigned idx, char literal)
-{ 
+template <typename StateType, typename AlphabetType, typename TransitionType>
+typename IAutomaton<StateType, AlphabetType, TransitionType>::Delta::StateCatcher 
+IAutomaton<StateType, AlphabetType,TransitionType>::Delta::operator()(unsigned idx, TransitionType literal)
+{
 	if (idx < automaton->all_states.size())
 	{
 		bool found = false;
@@ -74,36 +82,27 @@ Automaton::Delta::StateCatcher Automaton::Delta::operator()(unsigned idx, char l
 		if (not found)
 			throw exception("Literal not in alphabet");
 
-		StateCatcher catcher{ this, idx, literal };
+		StateCatcher catcher{this, idx, literal};
 		return catcher;
 	}
 	else
-		throw exception("State does not exist in automaton");
+		throw exception("SymbolAutomatonState does not exist in automaton");
 }
 
-Automaton::Automaton(shared_ptr<State> initial, vector<shared_ptr<State>> list, set<char> alphabet)
-:initial(initial), delta({ this }), alphabet(alphabet)
-{
-	add_state(initial);
-	for (auto& st : list)
-	{
-		if (st->identifier != initial->identifier)
-			add_state(st);
-	}
-}
-
-void Automaton::add_state(shared_ptr<State> state)
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::add_state(shared_ptr<StateType> state)
 {
 	map[state->identifier] = all_states.size();
 	all_states.push_back(state);
 	all_transitions.resize(all_transitions.size() + 1);
 }
 
-void Automaton::reset_states_identifiers()
+template <typename StateType, typename AlphabetType, typename TransitionType>
+void IAutomaton<StateType, AlphabetType, TransitionType>::reset_states_identifiers()
 {
 	decltype(map) new_map;
 	unsigned idx = 0;
-	for (auto& pair: map)
+	for (auto& pair : map)
 	{
 		new_map[to_string(idx)] = pair.second;
 		all_states[idx]->identifier = to_string(idx);
@@ -205,19 +204,19 @@ Automaton Automaton::get_deterministic_automaton()
 {
 	auto table = get_rel_table_deterministic();
 
-	vector<shared_ptr<State>> new_states;
+	vector<shared_ptr<SymbolAutomatonState>> new_states;
 	for (auto& pair : table)
 	{
 		string name("[");
-		State::Type type = State::NON_FINAL;
+		SymbolAutomatonStateType type = NON_FINAL;
 		for (auto& el : pair.first)
 		{
 			name += to_string(el);
 			name += string(",");
-			type = State::Type(type * all_states[el]->type);
+			type = SymbolAutomatonStateType(type * all_states[el]->data);
 		}
 		name += string("]");
-		new_states.push_back(make_shared<State>(State{ name, State::Type(type) }));
+		new_states.push_back(make_shared<SymbolAutomatonState>(SymbolAutomatonState{ name, SymbolAutomatonStateType(type) }));
 	}
 
 	auto new_alphabet = alphabet;
@@ -279,7 +278,7 @@ vector<vector<bool>> Automaton::get_rel_table_minimalistic()
 	{
 		for (unsigned qj = qi + 1; qj < n; qj++)
 		{
-			if (all_states[qi]->type != all_states[qj]->type)
+			if (all_states[qi]->data != all_states[qj]->data)
 				table[qi][qj] = 1;
 			else
 				table[qi][qj] = 0;
@@ -415,22 +414,22 @@ Automaton Automaton::get_minimal_automaton()
 		return false;
 	};
 
-	vector<pair<unsigned, shared_ptr<State>>> indexed_new_states;
+	vector<pair<unsigned, shared_ptr<SymbolAutomatonState>>> indexed_new_states;
 	for (unsigned i = 0; i < classes.size(); ++i)
 	{
 		if (idx_in_other_classes(i))
 			continue;
 
 		auto& state = all_states[i];
-		auto type = state->type;
+		auto type = state->data;
 		auto name = state->identifier;
 
-		indexed_new_states.emplace_back(make_pair(i, make_shared<State>(State{
+		indexed_new_states.emplace_back(make_pair(i, make_shared<SymbolAutomatonState>(SymbolAutomatonState{
 			                                               string("[") + name + string("]"), type
 		                                               })));
 	}
 
-	shared_ptr<State> new_initial_state;
+	shared_ptr<SymbolAutomatonState> new_initial_state;
 	for (auto class_itr : classes)
 	{
 		for (auto st_idx : class_itr)
@@ -441,7 +440,7 @@ Automaton Automaton::get_minimal_automaton()
 		}
 	}
 
-	vector<shared_ptr<State>> new_states;
+	vector<shared_ptr<SymbolAutomatonState>> new_states;
 	for (auto& pair : indexed_new_states)
 	{
 		new_states.push_back(pair.second);
@@ -466,7 +465,7 @@ Automaton Automaton::get_minimal_automaton()
 	{
 		for (auto& literal : alphabet) //looking for all literals
 		{
-			shared_ptr<State> next_state;
+			shared_ptr<SymbolAutomatonState> next_state;
 			auto class_idx = get_class_for_idx(new_state_pair.first);
 			for (auto& pair : indexed_new_states)
 			{
@@ -486,9 +485,9 @@ Automaton Automaton::get_minimal_automaton()
 
 bool Automaton::test(std::string word)
 {
-	std::function<bool(unsigned, std::shared_ptr<State>)> traverse_function = [&](unsigned idx, std::shared_ptr<State> current_state) -> bool
+	std::function<bool(unsigned, std::shared_ptr<SymbolAutomatonState>)> traverse_function = [&](unsigned idx, std::shared_ptr<SymbolAutomatonState> current_state) -> bool
 	{
-		if (idx >= word.size() && current_state->type == State::FINAL)
+		if (idx >= word.size() && current_state->data == SymbolAutomatonStateType::FINAL)
 			return true;
 		
 		const auto el = map.find(current_state->identifier);
@@ -534,7 +533,7 @@ string Automaton::to_dot()
 
 		if (state->identifier == initial->identifier)
 			init_stream << ", style= bold";
-		if (state->type == State::FINAL)
+		if (state->data == SymbolAutomatonStateType::FINAL)
 			init_stream << ", shape= box";
 
 		init_stream << "]; \n";

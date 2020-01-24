@@ -156,10 +156,10 @@ Automaton RegexTree::to_automaton()
 	};
 	pre(*this);
 
-	std::vector<std::shared_ptr<State>> new_states;
+	std::vector<std::shared_ptr<SymbolAutomatonState>> new_states;
 	for (unsigned st = 1; st <= 2 * (idx-1); ++st)
 	{
-		new_states.push_back(std::make_shared<State>(State{ std::to_string(st), State::NON_FINAL }));
+		new_states.push_back(std::make_shared<SymbolAutomatonState>(SymbolAutomatonState{ std::to_string(st), SymbolAutomatonStateType::NON_FINAL }));
 	}
 
 	alphabet.insert(A_EPS);
@@ -217,7 +217,7 @@ Automaton RegexTree::to_automaton()
 	pre2(*this);
 
 	new_automaton.initial = new_states[this->i - 1];
-	new_automaton.all_states[this->f - 1]->type = State::FINAL;
+	new_automaton.all_states[this->f - 1]->data = FINAL;
 
 	return new_automaton;
 }

@@ -15,34 +15,30 @@ using std::set;
 using std::pair;
 using std::make_shared;
 
+template<typename Data>
 struct State
 {
 	string identifier;
 	
-	enum Type
-	{
-		FINAL = 0,
-		NON_FINAL = 1
-	} type;
+	Data data;
 };
 
-#define INSTANTIATE_STATE_OBJ(state, type) auto state = make_shared<State>(State{#state, State::type});
-
-struct Automaton
+template<typename StateType, typename AlphabetType, typename TransitionType>
+struct IAutomaton
 {
-	shared_ptr<State> initial;
-	vector<shared_ptr<State>> all_states;
+	shared_ptr<StateType> initial;
+	vector<shared_ptr<StateType>> all_states;
 
-	set<char> alphabet;
-	
-	vector<map<char, set<unsigned>>> all_transitions;
+	set<AlphabetType> alphabet;
+
+	vector<map<TransitionType, set<unsigned>>> all_transitions;
 
 	//Map for indexing states
 	map<string, unsigned> map;
 
 	struct Delta
 	{
-		Automaton* automaton;
+		IAutomaton* automaton;
 
 		struct StateCatcher
 		{
@@ -51,21 +47,48 @@ struct Automaton
 			unsigned state_index;
 			char literal;
 
-			void operator>>(shared_ptr<State> state);
+			void operator>>(shared_ptr<StateType> state);
+
 			void operator>>(unsigned idx);
 
-			void operator=(shared_ptr<State> state);
+			void operator=(shared_ptr<StateType> state);
 			void operator=(unsigned idx);
 		};
 
-		StateCatcher operator()(shared_ptr<State> state, char literal);
-		StateCatcher operator()(unsigned idx, char literal);
+		StateCatcher operator()(shared_ptr<StateType> state, TransitionType literal);
+		StateCatcher operator()(unsigned idx, TransitionType literal);
 	} delta;
 
-	Automaton(shared_ptr<State> initial, vector<shared_ptr<State>> list, set<char> alphabet);
-
-	void add_state(shared_ptr<State> state);
+	void add_state(shared_ptr<StateType> state);
 	void reset_states_identifiers();
+
+	IAutomaton(shared_ptr<StateType> initial, vector<shared_ptr<StateType>> list, set<AlphabetType> alphabet)
+		:initial(initial), alphabet(alphabet), delta({ this })
+	{
+		this->add_state(initial);
+		for (auto& st : list)
+		{
+			if (st->identifier != initial->identifier)
+				this->add_state(st);
+		}
+	}
+};
+
+enum SymbolAutomatonStateType
+{
+	FINAL = 0,
+	NON_FINAL = 1
+};
+
+using SymbolAutomatonState = State<SymbolAutomatonStateType>;
+
+#define INSTANTIATE_STATE_OBJ(state, type) auto state = make_shared<SymbolAutomatonState>(SymbolAutomatonState{#state, type});
+
+struct Automaton : IAutomaton<SymbolAutomatonState, char, char>
+{
+	Automaton(shared_ptr<SymbolAutomatonState> initial, vector<shared_ptr<SymbolAutomatonState>> list, set<char> alphabet)
+	:IAutomaton<State<SymbolAutomatonStateType>, char, char>(initial, list, alphabet)
+	{}
 	
 	bool is_deterministic();
 
