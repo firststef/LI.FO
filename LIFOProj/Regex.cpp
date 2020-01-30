@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "Regex.h"
+#include "SymbolAutomaton.h"
 
 using std::function;
 
@@ -138,7 +139,7 @@ RegexTree regex_to_regex_tree(std::string regex)
 	return *t;
 }
 
-Automaton RegexTree::to_automaton()
+SymbolAutomaton RegexTree::to_automaton()
 {
 	unsigned idx = 1;
 	std::set<char> alphabet;
@@ -165,7 +166,7 @@ Automaton RegexTree::to_automaton()
 	}
 
 	alphabet.insert(A_EPS);
-	Automaton new_automaton(new_states[0], new_states, alphabet);//Automaton initial q init is awkward
+	SymbolAutomaton new_automaton(new_states[0], new_states, alphabet);//SymbolAutomaton initial q init is awkward
 
 	auto& x = new_automaton.delta;
 	auto z = x(1, 'a');

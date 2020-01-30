@@ -1,4 +1,5 @@
 #pragma once
+#include "SymbolAutomaton.h"
 #include "Automata.h"
 
 struct RegexTree
@@ -15,7 +16,7 @@ struct RegexTree
 
 	string to_dot();
 
-	Automaton to_automaton();
+	SymbolAutomaton to_automaton();
 };
 
 RegexTree regex_to_regex_tree(string regex);

@@ -27,6 +27,9 @@
     <ClCompile Include="GrammarII.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SymbolAutomaton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="reguli.txt">
@@ -34,9 +37,6 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BruteForceAlgo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Automata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -47,6 +47,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GrammarII.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SymbolAutomaton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

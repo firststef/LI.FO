@@ -2,6 +2,7 @@
 #include "Automata.h"
 #include "Regex.h"
 #include "GrammarII.h"
+#include "SymbolAutomaton.h"
 #include <iostream>
 #include <cstdlib>
 #include <fstream>

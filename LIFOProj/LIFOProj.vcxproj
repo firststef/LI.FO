@@ -119,15 +119,16 @@
     <ClCompile Include="GrammarII.cpp" />
     <ClCompile Include="Regex.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="SymbolAutomaton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="reguli.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Automata.h" />
-    <ClInclude Include="BruteForceAlgo.h" />
     <ClInclude Include="GrammarII.h" />
     <ClInclude Include="Regex.h" />
+    <ClInclude Include="SymbolAutomaton.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
