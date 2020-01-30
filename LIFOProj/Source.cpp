@@ -1,9 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <cstdlib>
-#include "BruteForceAlgo.h"
 #include "Automata.h"
 #include "Regex.h"
 #include "GrammarII.h"
+#include <iostream>
+#include <cstdlib>
+#include <fstream>
 
 using std::ofstream;
 using std::string;
