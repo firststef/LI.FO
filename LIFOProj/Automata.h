@@ -20,7 +20,7 @@ template<typename Data>
 struct State
 {
 	string identifier;
-	
+
 	Data data;
 };
 
@@ -74,8 +74,15 @@ struct IAutomaton
 				handler->automaton->all_transitions[state_index][literal].insert(idx);
 			}
 
-			void operator=(shared_ptr<StateType> state);
-			void operator=(unsigned idx);
+			void operator=(shared_ptr<StateType> state)
+			{
+				*this >> state;
+			}
+
+			void operator=(unsigned idx)
+			{
+				*this >> idx;
+			}
 		};
 
 		StateCatcher operator()(shared_ptr<StateType> state, TransitionType literal)
@@ -115,17 +122,31 @@ struct IAutomaton
 						found = true;
 
 				if (not found)
+#ifdef _WIN32
 					throw std::exception("Literal not in alphabet");
+#elif __linux__
+					throw std::exception();
+#endif
 
 				StateCatcher catcher{ this, idx, literal };
 				return catcher;
 			}
 			else
+#ifdef _WIN32
 				throw std::exception("SymbolAutomatonState does not exist in automaton");
+#elif __linux__
+				throw std::exception();
+#endif
+
 		}
 	} delta;
 
-	void add_state(shared_ptr<StateType> state);
+	void add_state(shared_ptr<StateType> state) {
+		index_map[state->identifier] = all_states.size();
+		all_states.push_back(state);
+		all_transitions.resize(all_transitions.size() + 1);
+	}
+
 	void reset_states_identifiers()
 	{
 		decltype(index_map) new_map;

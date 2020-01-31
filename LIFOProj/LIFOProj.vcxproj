@@ -115,7 +115,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Automata.cpp" />
     <ClCompile Include="GrammarII.cpp" />
     <ClCompile Include="Regex.cpp" />
     <ClCompile Include="Source.cpp" />

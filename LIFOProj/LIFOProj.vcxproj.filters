@@ -18,9 +18,6 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Automata.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Regex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
